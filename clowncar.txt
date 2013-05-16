@@ -1,0 +1,6 @@
+
+
+Using the clown car technique from http://www.standardista.com/responsive-images-clown-car-technique/ as a starting point..
+
+I found that the smallest image was still being downloaded, no matter what
+

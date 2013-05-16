@@ -2,20 +2,55 @@
 
 //http://www.standardista.com/responsive-images-clown-car-technique/
 
+/**
+ * Implements hook_menu().
+ */
 function clowncar_menu(){
 
 	$items = array();
 	
 	$items['clowncar/%/%'] = array(
-	
 		'title'            => 'SVG image',
     'description'      => '',
     'access arguments' => array('access content'),
     'page callback'    => 'clowncar_svg',
     'page arguments'   => array(1,2),
- 
-	
 	);
+
+  $items['admin/config/media/clowncar'] = array(
+    'title' => 'Image styles',
+    'description' => 'Configure styles that can be used for resizing or adjusting images on display.',
+    'page callback' => 'clowncar_list',
+    'access arguments' => array('administer image styles'),
+    'file' => 'clowncar.admin.inc',
+  );
+  $items['admin/config/media/clowncar/list'] = array(
+    'title' => 'List',
+    'description' => 'List the current image styles on the site.',
+    'page callback' => 'clowncar_list',
+    'access arguments' => array('administer clowncar'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 1,
+    'file' => 'clowncar.admin.inc',
+  );
+  $items['admin/config/media/clowncar/add'] = array(
+    'title' => 'Add style',
+    'description' => 'Add a new image style.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('clowncar_add_form'),
+    'access arguments' => array('administer clowncar'),
+    'type' => MENU_LOCAL_ACTION,
+    'weight' => 2,
+    'file' => 'clowncar.admin.inc',
+  );
+  $items['admin/config/media/clowncar/edit/%'] = array(
+    'title' => 'Edit style',
+    'description' => 'Configure an image style.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('clowncar_edit_form', 5),
+    'access arguments' => array('administer clowncar'),
+    'file' => 'clowncar.admin.inc',
+  );
 	
 	return $items;
 
@@ -38,9 +73,117 @@ function clowncar_field_formatter_info() {
   );
 }
 
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function clowncar_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  
+	//This gets the view_mode where our settings are stored
+  $display = $instance['display'][$view_mode];
+  
+	//This gets the actual settings
+  $settings = $display['settings'];
+  
+	//Initialize the element variable
+  $element = array();
+  
+	//Add your select box
+  $element['pic_size'] = array(
+    '#type'           => 'select',                           // Use a select box widget
+    '#title'          => t('Button Size'),                   // Widget label
+    '#description'    => t('Select what size of FB button'), // Helper text
+    '#default_value'  => $settings['pic_size'],              // Get the value if it's already been set
+    '#options'        => array(
+      'small'  => 'Small',
+      'medium' => 'Medium',
+      'large'  => 'Large',
+    ),
+  );
+	
+  $element['tooltip'] = array(
+    '#type'           => 'textfield',                        // Use a textbox
+    '#title'          => t('Tool Tip'),                      // Widget label
+    '#description'    => t('This text will appear when a user mouses over.'),  // helper text
+    '#default_value'  => $settings['tooltip'],               // Get the value if it's already been set
+  );
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function clowncar_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $summary = t('Use a @size Facebook button with the tooltip of "@tooltip"', array(
+    '@size'     => $settings['pic_size'],
+    '@tooltip'  => $settings['tooltip'],
+  )); // we use t() for translation and placeholders to guard against attacks
+  return $summary;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function clowncar_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+
+	//drupal_set_message('clowncar_field_formatter_view');
+
+	//drupal_set_message(_parse($items));
+
+  $element = array();
+
+  // Check if the formatter involves a link.
+  /*if ($display['settings']['image_link'] == 'content') {
+    $uri = entity_uri($entity_type, $entity);
+  }
+  elseif ($display['settings']['image_link'] == 'file') {
+    $link_file = TRUE;
+  }*/
+
+  foreach ($items as $delta => $item) {
+		
+		$el = array();
+		
+		$fid = $item['fid'];
+	
+		$item['uri'] = "http://sandbox2.dev.siftmedia.co.uk/clowncar/1/" . $fid . ".svg";
+		
+		//$item['uri'] = "http://sandbox.dev.siftmedia.co.uk/responsive-images/clowncar1.svg";
+	
+		//$el['#markup'] = '<img src="' . $item['uri'] . '" alt="test" />';
+		
+		$el['#markup'] = '<object data="' . $item['uri'] . '" type="image/svg+xml"></object>';
+		
+		$element[] = $el;
+	
+    /*if (isset($link_file)) {
+      $uri = array(
+        'path' => file_create_url($item['uri']),
+        'options' => array(),
+      );
+    }
+    $element[$delta] = array(
+      '#theme' => 'image_formatter',
+      '#item' => $item,
+      //'#image_style' => $display['settings']['image_style'],
+      '#path' => isset($uri) ? $uri : '',
+    );*/
+  }
+
+  return $element;
+	
+
+	
+
+}
+
 // $cid = clowncar id
 // $fid = file id
 function clowncar_svg($cid,$fid){
+	header('Content-type: image/svg+xml');
+
+	$fid = str_replace(".svg","",$fid);
 
 	$file = file_load($fid);
 	
@@ -110,4 +253,15 @@ function clowncar_svg($cid,$fid){
 	}
 	die();
 		
+}
+
+function clowncar_get_clowncars(){
+
+	// Select all the user-defined clowncars.
+	$user_styles = db_select('clowncar', NULL, array('fetch' => PDO::FETCH_ASSOC))
+		->fields('image_styles')
+		->orderBy('name')
+		->execute()
+		->fetchAllAssoc('name', PDO::FETCH_ASSOC);	
+
 }

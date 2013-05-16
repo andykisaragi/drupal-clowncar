@@ -1,0 +1,33 @@
+<?php
+
+
+/**
+ * Implements hook_schema().
+ */
+function clowncar_schema() {
+  $schema = array();
+
+  $schema['clowncar'] = array(
+    'description' => 'Stores configuration options for clowncars.',
+    'fields' => array(
+      'cid' => array(
+        'description' => 'The primary identifier for a clowncar.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => 'The style name.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('cid'),
+    'unique keys' => array(
+      'name' => array('name'),
+    ),
+  );
+
+  return $schema;
+}
