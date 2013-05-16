@@ -1,0 +1,113 @@
+<?php
+
+//http://www.standardista.com/responsive-images-clown-car-technique/
+
+function clowncar_menu(){
+
+	$items = array();
+	
+	$items['clowncar/%/%'] = array(
+	
+		'title'            => 'SVG image',
+    'description'      => '',
+    'access arguments' => array('access content'),
+    'page callback'    => 'clowncar_svg',
+    'page arguments'   => array(1,2),
+ 
+	
+	);
+	
+	return $items;
+
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+ //http://www.metaltoad.com/blog/drupal-7-tutorial-creating-custom-formatters
+function clowncar_field_formatter_info() {
+  return array(
+    'clowncar_formatter' => array( //Machine name of the formatter
+      'label' => t('Clowncar'),
+      'field types' => array('image'), //This will only be available to text fields
+      'settings'  => array( //Array of the settings we'll create
+        'pic_size' => 'small', //give a default value for when the form is first loaded
+        'tooltip' => 'Link to user Facebook page', //ditto
+      ),
+    ),
+  );
+}
+
+// $cid = clowncar id
+// $fid = file id
+function clowncar_svg($cid,$fid){
+
+	$file = file_load($fid);
+	
+	$clowncar = array(
+	
+		0 => array(
+			'min-width' => 0,
+			'max-width' => 400,
+			'style' => '300',
+		),
+		1 => array(
+			'min-width' => 401,
+			'max-width' => 700,
+			'style' => '600',
+		),
+		2 => array(
+			'min-width' => 701,
+			'max-width' => 1000,
+			'style' => '900',
+		),
+		3 => array(
+			'min-width' => 1001,
+			'max-width' => null,
+			'style' => '1200',
+		),
+	
+	);
+	
+	if ($file){
+	
+		
+
+		$svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 329" preserveAspectRatio="xMidYMid meet">
+			<title>Clown Car Technique</title>
+			<style> 
+			svg {
+				background-size: 100%;
+				background-repeat: no-repeat;
+			} 
+			';
+			
+			foreach($clowncar as $clown){
+			
+				$mq = array('@media screen');
+				if ($clown['min-width']){				
+					$mq[] = '(min-width: ' . $clown['min-width'] . 'px)';
+				}
+				if ($clown['max-width']){				
+					$mq[] = '(max-width: ' . $clown['max-width'] . 'px)';
+				}
+				
+				$mq = implode(' and ',$mq);
+				
+				//TODO: if imagecache folder not created yet, this fails. need to ensure it's there
+				$svg .= $mq . ' {
+				svg {background-image: url("http://sandbox2.dev.siftmedia.co.uk/sites/default/files/styles/' . $clown['style'] .  '/public/' . $file->filename . '");}
+				} ';
+			
+			}
+
+			
+			$svg .= '</style>
+			</svg>';
+
+		print $svg;
+	
+	}
+	die();
+		
+}
